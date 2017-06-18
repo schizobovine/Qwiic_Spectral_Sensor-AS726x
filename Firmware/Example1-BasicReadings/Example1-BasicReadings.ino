@@ -44,10 +44,12 @@
 */
 
 #include <Wire.h>
+#include <AS726xLib.h>
 
-byte sensorVersion = 0; //Keeps track of whether we have an AS7262 or AS7263
 #define SENSORTYPE_AS7262 0x3E
 #define SENSORTYPE_AS7263 0x3F
+
+AS726x sensor = AS726x();
 
 void setup()
 {
@@ -57,55 +59,54 @@ void setup()
 
   Wire.begin();
 
-  sensorVersion = as726xSetup();
-  if (sensorVersion == 0)
+  if (sensor.begin() == 0)
   {
     Serial.println("Sensor failed to respond. Check wiring.");
     while (1); //Freeze!
   }
 
-  if(sensorVersion == SENSORTYPE_AS7262) Serial.println("AS7262 online!");
-  if(sensorVersion == SENSORTYPE_AS7263) Serial.println("AS7263 online!");
+  if(sensor.version() == SENSORTYPE_AS7262) Serial.println("AS7262 online!");
+  if(sensor.version() == SENSORTYPE_AS7263) Serial.println("AS7263 online!");
 }
 
 void loop()
 {
-  takeMeasurements(); //No LED - easier on your eyes
-  //takeMeasurementsWithBulb(); //Use LED - bright white LED
+  sensor.takeMeasurements(); //No LED - easier on your eyes
+  //sensor.takeMeasurementsWithBulb(); //Use LED - bright white LED
 
-  float tempF = getTemperatureF();
+  float tempF = sensor.getTemperatureF();
   
-  if(sensorVersion == SENSORTYPE_AS7262)
+  if(sensor.version() == SENSORTYPE_AS7262)
   {
     //Visible readings
     Serial.print(" Reading: V[");
-    Serial.print(getViolet());
+    Serial.print(sensor.getViolet());
     Serial.print("] B[");
-    Serial.print(getBlue());
+    Serial.print(sensor.getBlue());
     Serial.print("] G[");
-    Serial.print(getGreen());
+    Serial.print(sensor.getGreen());
     Serial.print("] Y[");
-    Serial.print(getYellow());
+    Serial.print(sensor.getYellow());
     Serial.print("] O[");
-    Serial.print(getOrange());
+    Serial.print(sensor.getOrange());
     Serial.print("] R[");
-    Serial.print(getRed());
+    Serial.print(sensor.getRed());
   }
-  else if(sensorVersion == SENSORTYPE_AS7263)
+  else if(sensor.version() == SENSORTYPE_AS7263)
   {
     //Near IR readings
     Serial.print(" Reading: R[");
-    Serial.print(getR());
+    Serial.print(sensor.getR());
     Serial.print("] S[");
-    Serial.print(getS());
+    Serial.print(sensor.getS());
     Serial.print("] T[");
-    Serial.print(getT());
+    Serial.print(sensor.getT());
     Serial.print("] U[");
-    Serial.print(getU());
+    Serial.print(sensor.getU());
     Serial.print("] V[");
-    Serial.print(getV());
+    Serial.print(sensor.getV());
     Serial.print("] W[");
-    Serial.print(getW());
+    Serial.print(sensor.getW());
   }
 
   Serial.print("] tempF[");
