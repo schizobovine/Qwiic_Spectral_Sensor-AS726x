@@ -1,13 +1,17 @@
 /*
- * AS726xLib.h - C Header file for AS726xLib library code.
+ * AS726xTeensyLib.h - C Header file for AS726xLib library code, specialized
+ * for the Teensy platform as several devices have more than one i2c bus
+ * (allowing multiple chips to be used at once).
  *
  * Author: Nathan Seidle (SparkFun), modifications to library form by Sean Caulfield
  * License: Public domain (but you should buy Nate a beer or just something from SparkFun)
  *
  */
 
-#ifndef __AS726X_LIB_H__
-#define __AS726X_LIB_H__
+#ifndef __AS726X_TEENSY_LIB_H__
+#define __AS726X_TEENSY_LIB_H__
+
+#include <i2c_t3.h>
 
 //7-bit unshifted default I2C Address
 #define AS726X_ADDR 0x49
@@ -69,21 +73,58 @@
 
 // Gain control
 #define AS726X_GAIN_1X  0x00 //Gain 0: 1x (power-on default)
-#define AS726X_GAIN_4X  0x00 //Gain 1: 3.7x
-#define AS726X_GAIN_16X 0x00 //Gain 2: 16x
-#define AS726X_GAIN_64X 0x00 //Gain 3: 64x
+#define AS726X_GAIN_4X  0x01 //Gain 1: 3.7x
+#define AS726X_GAIN_16X 0x02 //Gain 2: 16x
+#define AS726X_GAIN_64X 0x03 //Gain 3: 64x
 
 //Amount of ms to wait between checking for virtual register changes
 #define AS726X_POLLING_DELAY 5
 
-class AS726x
+typedef struct {
+  int vis_v;
+  int vis_b;
+  int vis_g;
+  int vis_y;
+  int vis_o;
+  int vis_r;
+} as726x_raw_vis_t;
+
+typedef struct {
+  int nir_r;
+  int nir_s;
+  int nir_t;
+  int nir_u;
+  int nir_v;
+  int nir_w;
+} as726x_raw_nir_t;
+
+typedef struct {
+  float vis_v;
+  float vis_b;
+  float vis_g;
+  float vis_y;
+  float vis_o;
+  float vis_r;
+} as726x_cal_vis_t;
+
+typedef struct {
+  float nir_r;
+  float nir_s;
+  float nir_t;
+  float nir_u;
+  float nir_v;
+  float nir_w;
+} as726x_cal_nir_t;
+
+class AS726xTeensy
 {
 
   public:
 
     //Sets up the sensor for constant read
     //Returns the sensor version (AS7262 or AS7263)
-    uint8_t begin(void);
+    uint8_t begin();
+    uint8_t begin(i2c_t3 *bus);
 
     // Returns sensor version
     uint8_t version();
@@ -138,7 +179,13 @@ class AS726x
     int getV();
     int getW();
 
-    //Given an address, read four bytes and return the floating point calibrated value
+    // Get all 6 channels in a struct in one go (overloaded for both types
+    // so the names make sense
+    as726x_raw_vis_t *getAll(as726x_raw_vis_t *dest);
+    as726x_raw_nir_t *getAll(as726x_raw_nir_t *dest);
+
+    //Given an address, read four bytes and return the floating point
+    //calibrated value
     float getCalibratedValue(uint8_t calAddress);
 
     //Returns the various calibration data for visible light
@@ -156,6 +203,10 @@ class AS726x
     float getCalibratedU();
     float getCalibratedV();
     float getCalibratedW();
+
+    // Get all 6 calibrated channels in one go
+    as726x_cal_vis_t *getCalibratedAll(as726x_cal_vis_t *dest);
+    as726x_cal_nir_t *getCalibratedAll(as726x_cal_nir_t *dest);
 
     //Given 4 bytes returns the floating point value
     float convertBytesToFloat(uint32_t myLong);
@@ -216,6 +267,9 @@ class AS726x
 
     // Stored sensor version for primative polymorphism
     uint8_t sensorVersion = 0;
+
+    // I2C bus we're using
+    i2c_t3 *bus = NULL;
 
 };
 
